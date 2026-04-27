@@ -143,10 +143,13 @@ def main():
     save_cache(new_data)
 
     if not old_data:
-        print("初回実行のためキャッシュなし。次回から差分通知します。")
-        return
-
-    new_slots = find_new_slots(old_data, new_data)
+        # 初回はキャッシュがないので全空き枠をそのまま通知
+        new_slots = {
+            fcode: by_date
+            for fcode, by_date in new_data.items()
+        }
+    else:
+        new_slots = find_new_slots(old_data, new_data)
 
     if not new_slots:
         total = sum(len(v) for v in new_data.values())
