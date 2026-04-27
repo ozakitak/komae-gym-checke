@@ -1,0 +1,41 @@
+name: 体育館空き状況チェック
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # 毎日 23:00 UTC = 翌 08:00 JST
+  workflow_dispatch:       # 手動実行ボタン
+
+permissions:
+  contents: write  # cache.json をコミットするために必要
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 空き状況チェック & 通知
+        env:
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_TO: ${{ secrets.SMTP_TO }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          CHECK_DAYS: '60'
+        run: python daily_check.py
+
+      - name: cache.json をコミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cache.json
+          git diff --staged --quiet || git commit -m "chore: update cache $(date +'%Y-%m-%d')"
+          git push
