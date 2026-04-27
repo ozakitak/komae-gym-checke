@@ -3,6 +3,7 @@ name: 体育館空き状況チェック
 on:
   schedule:
     - cron: '0 23 * * *'  # 毎日 23:00 UTC = 翌 08:00 JST
+    - cron: '0 11 * * *'  # 毎日 11:00 UTC = 20:00 JST
   workflow_dispatch:       # 手動実行ボタン
 
 permissions:
