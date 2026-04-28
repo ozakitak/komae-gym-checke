@@ -60,25 +60,40 @@ def find_new_slots(old: dict, new: dict) -> dict:
     """前回にはなかった新規の空きスロットを返す。
 
     old / new の構造:
-      { facility_code: { "YYYY/MM/DD": [{"time": ..., "room": ..., "status": ...}] } }
+      { "_run_date": "YYYY/MM/DD", facility_code: { "YYYY/MM/DD": [...] } }
 
-    「前回もチェック対象だった日付」に新規スロットが増えた場合のみ通知する。
-    （予約受付が始まって初めて見える日は通知しない）
+    前回の実行日 + days のウィンドウ内にあった日付に新規スロットが出た場合のみ通知する。
+    ウィンドウ外（新たに追加された最終日）は通知しない。
     """
     new_slots: dict = {}
 
+    # 前回の実行日とチェック日数からウィンドウ終端を算出
+    old_run_date_str = old.get("_run_date")
+    if old_run_date_str:
+        old_run_date = datetime.strptime(old_run_date_str, "%Y/%m/%d")
+        old_window_end = old_run_date + timedelta(days=old.get("_days", 60))
+    else:
+        old_window_end = None
+
     for fcode, by_date in new.items():
+        if fcode.startswith("_"):
+            continue
         old_by_date = old.get(fcode, {})
         for date_key, slots in by_date.items():
             old_slots = old_by_date.get(date_key)
 
-            # 前回このfcode・日付が存在しなかった = 新しく受付開始した日なので通知しない
             if old_slots is None:
-                continue
-
-            # 前回のスロット一覧をセット化（time+room で識別）
-            old_set = {(s["time"], s["room"]) for s in old_slots}
-            new_entries = [s for s in slots if (s["time"], s["room"]) not in old_set]
+                # 前回キャッシュにない日付 → ウィンドウ内なら本物のキャンセル、外なら受付開始
+                if old_window_end is None:
+                    continue
+                slot_date = datetime.strptime(date_key, "%Y/%m/%d")
+                if slot_date > old_window_end:
+                    continue  # 新たにウィンドウに入った日 = 受付開始なので通知しない
+                new_entries = slots  # ウィンドウ内の新規空き = キャンセル
+            else:
+                # 前回もあった日付 → 増えたスロットだけ通知
+                old_set = {(s["time"], s["room"]) for s in old_slots}
+                new_entries = [s for s in slots if (s["time"], s["room"]) not in old_set]
 
             if new_entries:
                 new_slots.setdefault(fcode, {})[date_key] = new_entries
@@ -136,8 +151,13 @@ def main():
     cfg = load_config()
     run_at = datetime.now().strftime("%Y/%m/%d %H:%M")
 
+    days = cfg.get("days", 60)
     print(f"[{run_at}] 空き状況を取得中...")
-    new_data = fetch_all(days=cfg.get("days", 60), room_filter=GYM_KEYWORDS)
+    new_data = fetch_all(days=days, room_filter=GYM_KEYWORDS)
+
+    # 実行日と日数をキャッシュに記録（差分判定に使用）
+    new_data["_run_date"] = datetime.now().strftime("%Y/%m/%d")
+    new_data["_days"] = days
 
     old_data = load_cache()
     save_cache(new_data)
