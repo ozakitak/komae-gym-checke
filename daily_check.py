@@ -172,8 +172,10 @@ def main():
     else:
         new_slots = find_new_slots(old_data, new_data)
 
+    facility_data = {k: v for k, v in new_data.items() if not k.startswith("_")}
+
     if not new_slots:
-        total = sum(len(v) for v in new_data.values())
+        total = sum(len(slots) for by_date in facility_data.values() for slots in by_date.values())
         print(f"新規キャンセルなし（現在の空き: {total}件）")
         return
 
