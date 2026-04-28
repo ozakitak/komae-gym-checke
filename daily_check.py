@@ -163,10 +163,11 @@ def main():
     save_cache(new_data)
 
     if not old_data:
-        # 初回はキャッシュがないので全空き枠をそのまま通知
+        # 初回はキャッシュがないので全空き枠をそのまま通知（メタキーを除く）
         new_slots = {
             fcode: by_date
             for fcode, by_date in new_data.items()
+            if not fcode.startswith("_")
         }
     else:
         new_slots = find_new_slots(old_data, new_data)
