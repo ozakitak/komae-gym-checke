@@ -194,8 +194,8 @@ def fetch_all(
             except Exception as e:
                 print(f"[{fname} {target.strftime('%m/%d')}] エラー: {e}", file=sys.stderr)
 
-        if by_date:
-            result[fcode] = by_date
+        # 空きゼロでも必ず記録（「取得成功・空きなし」と「取得失敗」を区別するため）
+        result[fcode] = by_date
 
     return result
 
@@ -215,12 +215,13 @@ def check_availability(
     print(f"体育館空き状況 ({start.strftime('%Y/%m/%d')} から {days} 日間 / {filter_label})\n")
 
     data = fetch_all(days=days, facility_codes=facility_codes, room_filter=room_filter)
+    data_with_slots = {k: v for k, v in data.items() if v}
 
-    if not data:
+    if not data_with_slots:
         print("全施設で空きスロットなし")
         return
 
-    for fcode, by_date in data.items():
+    for fcode, by_date in data_with_slots.items():
         fname = ALL_FACILITIES.get(fcode, fcode)
         print(f"{'='*55}")
         print(f"  {fname}")

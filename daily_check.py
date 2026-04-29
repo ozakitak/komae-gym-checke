@@ -160,14 +160,27 @@ def main():
     new_data["_days"] = days
 
     old_data = load_cache()
-    save_cache(new_data)
 
-    if not old_data:
+    # new_data に含まれる施設コード = 今回取得成功した施設
+    fetched = {k for k in new_data if not k.startswith("_")}
+
+    # 取得失敗した施設だけ旧キャッシュを引き継ぐ
+    # （取得成功・空きなし の施設は {} で上書きして古いデータを消す）
+    merged = {k: v for k, v in old_data.items() if not k.startswith("_") and k not in fetched}
+    merged.update({k: v for k, v in new_data.items() if not k.startswith("_")})
+    merged["_run_date"] = new_data["_run_date"]
+    merged["_days"] = new_data["_days"]
+    save_cache(merged)
+
+    # 施設データが1件以上あれば「前回キャッシュあり」とみなす
+    old_has_data = any(not k.startswith("_") for k in old_data)
+
+    if not old_has_data:
         # 初回はキャッシュがないので全空き枠をそのまま通知（メタキーを除く）
         new_slots = {
             fcode: by_date
             for fcode, by_date in new_data.items()
-            if not fcode.startswith("_")
+            if not fcode.startswith("_") and by_date
         }
     else:
         new_slots = find_new_slots(old_data, new_data)
