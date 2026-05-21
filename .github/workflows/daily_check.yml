@@ -2,8 +2,10 @@ name: 体育館空き状況チェック
 
 on:
   schedule:
-    - cron: '0 23 * * *'  # 毎日 23:00 UTC = 翌 08:00 JST
-    - cron: '0 11 * * *'  # 毎日 11:00 UTC = 20:00 JST
+    # JST 7:00-23:00 を毎時実行(分は 5 に固定して混雑回避)
+    # JST 7-9 時 = UTC 22-23 時(前日), 24 時 = UTC 翌 0 時 -> 22-23 UTC と 0-14 UTC
+    - cron: '5 22-23 * * *'  # JST 7:00, 8:00
+    - cron: '5 0-14 * * *'   # JST 9:00 - 23:00
   workflow_dispatch:       # 手動実行ボタン
 
 permissions:
@@ -30,7 +32,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          CHECK_DAYS: '60'
+          CHECK_DAYS: '30'
         run: python daily_check.py
 
       - name: cache.json をコミット

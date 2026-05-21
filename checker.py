@@ -6,10 +6,14 @@ https://k5.p-kashikan.jp/komae-city/index.php
 
 import re
 import sys
+import time
 import urllib.request
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
+
+FETCH_INTERVAL_SEC = 0.3  # 相手サーバへの礼儀として各リクエスト間に挿入
+JST = timezone(timedelta(hours=9))
 
 BASE_URL = "https://k5.p-kashikan.jp/komae-city/index.php"
 
@@ -172,7 +176,7 @@ def fetch_all(
     if facility_codes is None:
         facility_codes = list(GYM_FACILITIES.keys())
 
-    today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(JST).replace(hour=0, minute=0, second=0, microsecond=0)
     start = today + timedelta(days=1)
     result: dict = {}
 
@@ -193,6 +197,7 @@ def fetch_all(
                     ]
             except Exception as e:
                 print(f"[{fname} {target.strftime('%m/%d')}] エラー: {e}", file=sys.stderr)
+            time.sleep(FETCH_INTERVAL_SEC)
 
         # 空きゼロでも必ず記録（「取得成功・空きなし」と「取得失敗」を区別するため）
         result[fcode] = by_date
@@ -208,7 +213,7 @@ def check_availability(
     if facility_codes is None:
         facility_codes = list(GYM_FACILITIES.keys())
 
-    today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(JST).replace(hour=0, minute=0, second=0, microsecond=0)
     start = today + timedelta(days=1)
 
     filter_label = f"室場フィルタ: {room_filter}" if room_filter else "室場フィルタ: なし(全室場)"

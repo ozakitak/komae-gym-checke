@@ -16,7 +16,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
-from checker import ALL_FACILITIES, GYM_KEYWORDS, fetch_all
+from checker import ALL_FACILITIES, GYM_KEYWORDS, JST, fetch_all
 
 BASE_DIR = Path(__file__).parent
 CACHE_FILE = BASE_DIR / "cache.json"
@@ -149,14 +149,14 @@ def send_email(cfg: dict, subject: str, body: str):
 
 def main():
     cfg = load_config()
-    run_at = datetime.now().strftime("%Y/%m/%d %H:%M")
+    run_at = datetime.now(JST).strftime("%Y/%m/%d %H:%M")
 
     days = cfg.get("days", 60)
     print(f"[{run_at}] 空き状況を取得中...")
     new_data = fetch_all(days=days, room_filter=GYM_KEYWORDS)
 
     # 実行日と日数をキャッシュに記録（差分判定に使用）
-    new_data["_run_date"] = datetime.now().strftime("%Y/%m/%d")
+    new_data["_run_date"] = datetime.now(JST).strftime("%Y/%m/%d")
     new_data["_days"] = days
 
     old_data = load_cache()
