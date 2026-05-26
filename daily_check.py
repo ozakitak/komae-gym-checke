@@ -193,7 +193,15 @@ def main():
         return
 
     count = sum(len(slots) for by_date in new_slots.values() for slots in by_date.values())
-    print(f"新規キャンセル {count} 枠を検出。メール送信中...")
+    print(f"新規キャンセル {count} 枠を検出:")
+    for fcode in sorted(new_slots.keys()):
+        fname = ALL_FACILITIES.get(fcode, fcode)
+        for date_key in sorted(new_slots[fcode].keys()):
+            dt = datetime.strptime(date_key, "%Y/%m/%d")
+            weekday = ["月", "火", "水", "木", "金", "土", "日"][dt.weekday()]
+            for s in sorted(new_slots[fcode][date_key], key=lambda x: (x["room"], x["time"])):
+                print(f"  {date_key}({weekday}) {s['time']}  {fname} / {s['room']}  [{s['status']}]")
+    print("メール送信中...")
 
     subject = f"【狛江体育館】キャンセル枠 {count} 件 ({run_at})"
     body = format_body(new_slots, run_at)

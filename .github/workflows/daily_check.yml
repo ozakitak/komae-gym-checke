@@ -34,7 +34,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          CHECK_DAYS: '30'
+          CHECK_DAYS: '90'
         run: python daily_check.py
 
       - name: cache.json をコミット
