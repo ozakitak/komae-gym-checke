@@ -187,20 +187,28 @@ def main():
 
     facility_data = {k: v for k, v in new_data.items() if not k.startswith("_")}
 
+    def print_slots(data: dict):
+        for fcode in sorted(data.keys()):
+            by_date = data[fcode]
+            if not by_date:
+                continue
+            fname = ALL_FACILITIES.get(fcode, fcode)
+            for date_key in sorted(by_date.keys()):
+                dt = datetime.strptime(date_key, "%Y/%m/%d")
+                weekday = ["月", "火", "水", "木", "金", "土", "日"][dt.weekday()]
+                for s in sorted(by_date[date_key], key=lambda x: (x["room"], x["time"])):
+                    print(f"  {date_key}({weekday}) {s['time']}  {fname} / {s['room']}  [{s['status']}]")
+
     if not new_slots:
         total = sum(len(slots) for by_date in facility_data.values() for slots in by_date.values())
         print(f"新規キャンセルなし（現在の空き: {total}件）")
+        if total:
+            print_slots(facility_data)
         return
 
     count = sum(len(slots) for by_date in new_slots.values() for slots in by_date.values())
     print(f"新規キャンセル {count} 枠を検出:")
-    for fcode in sorted(new_slots.keys()):
-        fname = ALL_FACILITIES.get(fcode, fcode)
-        for date_key in sorted(new_slots[fcode].keys()):
-            dt = datetime.strptime(date_key, "%Y/%m/%d")
-            weekday = ["月", "火", "水", "木", "金", "土", "日"][dt.weekday()]
-            for s in sorted(new_slots[fcode][date_key], key=lambda x: (x["room"], x["time"])):
-                print(f"  {date_key}({weekday}) {s['time']}  {fname} / {s['room']}  [{s['status']}]")
+    print_slots(new_slots)
     print("メール送信中...")
 
     subject = f"【狛江体育館】キャンセル枠 {count} 件 ({run_at})"
